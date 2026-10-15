@@ -1,0 +1,5 @@
+node_modules/
+.project/
+unpackage/
+project.private.config.json
+.DS_Store
