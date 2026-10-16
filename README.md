@@ -19,6 +19,13 @@ git push
 
 ##  换电脑怎么操作
 ### 新电脑上：
+### # 0.重新正确设置代理
+* #### 查看当前代理配配置
+ `git config --global --get http.proxy
+ git config --global --get https.proxy`
+* #### 重新设置当前代理配置
+ `git config --global http.proxy http://127.0.0.1:7890
+ git config --global https.proxy http://127.0.0.1:7890`
 ### # 1. 克隆项目
  ` git clone [https://github.com](https://github.com/你的账号地址.git) `
 ### # 2. 配置环境
