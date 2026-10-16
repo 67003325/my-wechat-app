@@ -31,6 +31,7 @@ git push
 
 <img width="652" height="456" alt="image" src="https://github.com/user-attachments/assets/e94ee124-986d-4b10-b886-8c2ee5d6cdda" />
 
-
+一张速查表
+操作命令添加远程仓库git remote add origin <URL>首次推送git push -u origin master以后推送git push拉取更新git pull暂存改动git add .提交git commit -m "说明"查看状态git status查看远程git remote -v
 
 ---
