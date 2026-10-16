@@ -1,9 +1,9 @@
-1.0.1
+## 1.0.1
 * 修改重新登录小程序后，不显示原保存在草稿箱的文件
 * 修改草稿箱自动生成多个文件的问题
 --- 
 
-# 🛠️ 日常更新与推送三步法
+## # 🛠️ 日常更新与推送三步法
 
 打开本地项目文件夹的终端（Git Bash 或 CMD），依次输入以下命令：
 
@@ -26,16 +26,33 @@ git push
  ```
 > 请谨慎使用此类代码。
 
-# 换电脑怎么操作
+## # 换电脑怎么操作
+  ### 新电脑上：
+```bash
+# 1. 克隆项目
+git clone https://github.com
 
+# 2. 用微信开发者工具导入这个目录，填上你的 AppID
+# 3. 菜单 -> 工具 -> 构建 npm (如果有用到 npm 包的话)
 
-<img width="657" height="408" alt="image" src="https://github.com/user-attachments/assets/e176cb9a-966c-4a62-aab1-1f1a43d91742" />
+# 开始写代码
+git pull              # 每次开始前先拉
+# ...写代码...
+git add .
+git commit -m "在新电脑上的改动"
+git push              # 推回去
+```
 
-<img width="654" height="416" alt="image" src="https://github.com/user-attachments/assets/d864b270-8610-405f-a0e0-429c3472265f" />
-
-<img width="652" height="456" alt="image" src="https://github.com/user-attachments/assets/e94ee124-986d-4b10-b886-8c2ee5d6cdda" />
-
-一张速查表
-操作命令添加远程仓库git remote add origin <URL>首次推送git push -u origin master以后推送git push拉取更新git pull暂存改动git add .提交git commit -m "说明"查看状态git status查看远程git remote -v
+## # 一张速查表
+| 操作 | 命令 |
+| :--- | :--- |
+| 添加远程仓库 | `git remote add origin <URL>` |
+| 首次推送 | `git push -u origin master` |
+| 以后推送 | `git push` |
+| 拉取更新 | `git pull` |
+| 暂存改动 | `git add .` |
+| 提交 | `git commit -m "本次更新的描述"` |
+| 查看状态 | `git status` |
+| 查看远程 | `git remote -v` |
 
 ---
