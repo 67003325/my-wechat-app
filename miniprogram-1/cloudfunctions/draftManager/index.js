@@ -14,14 +14,38 @@ async function ensureCollection() {
 }
 
 /**
+ * 按 docId 删除一条草稿（文件 + 记录），带归属校验
+ * @param {string} docId
+ */
+async function deleteDocById(docId, OPENID) {
+  let doc = null;
+  try {
+    doc = await db.collection(DRAFT_COLLECTION).doc(docId).get();
+  } catch (e) { return { ok: true }; }  // 本来就没有，直接算成功
+
+  // 归属校验（记录带 _openid 且不匹配才拒绝）
+  if (doc && doc.data && doc.data._openid && doc.data._openid !== OPENID) {
+    return { ok: false, error: '无权限删除他人草稿' };
+  }
+
+  if (doc && doc.data && doc.data.fileID) {
+    await cloud.deleteFile({ fileList: [doc.data.fileID] }).catch(() => {});
+  }
+  await db.collection(DRAFT_COLLECTION).doc(docId).remove().catch(() => {});
+  return { ok: true };
+}
+
+/**
  * 草稿箱云函数（单入口，按 action 分发）
  *
- * - save   { name, data, snapshot }  保存草稿
- *     snapshot=false → 自动保存：覆盖写 drafts/{openid}/autosave.json（固定槽位）
+ * - save   { name, data, snapshot, draftId }  保存草稿
+ *     snapshot=false → 自动保存：按 draftId upsert（传入 draftId 则更新同一条，
+ *                      改名也只是改名；没传则新建）
  *     snapshot=true  → 具名快照：新建文件 + 登记到草稿箱集合（手机端可见、可删）
  * - list   {}                        草稿箱列表（仅本人的）
  * - get    { fileID }                读取草稿 JSON 内容
  * - delete { id, fileID }            删除草稿箱里的具名草稿（校验归属）
+ * - deleteById { draftId }           删除当前编辑的草稿（按草稿身份）
  * - deleteAutosave {}               删除自动保存槽位（文件 + 记录）
  *
  * 💡 为什么走云函数：云函数用管理员身份读写云存储，
@@ -55,26 +79,26 @@ exports.main = async (event) => {
           return { ok: true, fileID: up.fileID, savedAt: stamp };
         }
 
-        // 💡 自动保存：按项目名归类（一项目一槽位，同名覆盖）
+        // 💡 自动保存：按「草稿身份 draftId」归类
+        //    - 前端传入 draftId → 更新同一条记录（改项目名也只是改名，不新建）
+        //    - 没传 draftId（全新项目）→ 生成一个新 draftId 并新建记录
         const projectName = (data && data.projectName && String(data.projectName).trim()) || '未命名项目';
-        const normalized = projectName
-          .replace(/[\s\\/:*?"<>|]+/g, '_')   // 空白与非法字符 → 下划线
-          .replace(/^_+|_+$/g, '')             // 去首尾下划线
-          .slice(0, 50) || '未命名项目';
-        const docId = `draft_${OPENID}_${normalized}`;
-        const fileName = `draft_${normalized}.json`;   // 同名项目固定文件名 → 上传自动覆盖
+        const draftId = String(event.draftId || '').trim() || `${stamp}`;
+        const docId = `draft_${OPENID}_${draftId}`;
+        const fileName = `draft_${draftId}.json`;   // 同一草稿固定文件名 → 上传自动覆盖
         const cloudPath = `drafts/${OPENID}/${fileName}`;
 
         const up = await cloud.uploadFile({
           cloudPath,
-          fileContent: Buffer.from(JSON.stringify({ ...data, name: projectName, savedAt: stamp }), 'utf-8')
+          // draftId 写进内容里，恢复草稿时能找回身份
+          fileContent: Buffer.from(JSON.stringify({ ...data, name: projectName, draftId, savedAt: stamp }), 'utf-8')
         });
 
         await db.collection(DRAFT_COLLECTION).doc(docId).set({
-          data: { _openid: OPENID, name: projectName, fileID: up.fileID, savedAt: stamp }
+          data: { _openid: OPENID, draftId, name: projectName, fileID: up.fileID, savedAt: stamp }
         });
 
-        return { ok: true, fileID: up.fileID, savedAt: stamp, projectName };
+        return { ok: true, fileID: up.fileID, savedAt: stamp, draftId, projectName };
       }
 
       // ================= 草稿箱列表（仅本人） =================
@@ -113,6 +137,50 @@ exports.main = async (event) => {
         if (doc && doc.data) {
           await db.collection(DRAFT_COLLECTION).doc(id).remove();
         }
+        return { ok: true };
+      }
+
+      // ================= 删除当前草稿（按草稿身份 draftId） =================
+      case 'deleteById': {
+        await ensureCollection();
+        const draftId = String(event.draftId || '').trim();
+        if (!draftId) {
+          // 兼容旧记录：没有 draftId 时退化为按项目名删
+          const raw = String(event.name || '').trim() || '未命名项目';
+          const normalized = raw
+            .replace(/[\s\\/:*?"<>|]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 50) || '未命名项目';
+          return await deleteDocById(`draft_${OPENID}_${normalized}`, OPENID);
+        }
+        return await deleteDocById(`draft_${OPENID}_${draftId}`, OPENID);
+      }
+
+      // ================= 删除指定项目的草稿槽位（按项目名，兼容旧模型） =================
+      case 'deleteByName': {
+        await ensureCollection();
+        const raw = String(event.name || '').trim() || '未命名项目';
+        // 归一化规则必须与 save 保持一致，否则 docId 对不上
+        const normalized = raw
+          .replace(/[\s\\/:*?"<>|]+/g, '_')
+          .replace(/^_+|_+$/g, '')
+          .slice(0, 50) || '未命名项目';
+        const docId = `draft_${OPENID}_${normalized}`;
+
+        let doc = null;
+        try {
+          doc = await db.collection(DRAFT_COLLECTION).doc(docId).get();
+        } catch (e) { return { ok: true }; }  // 本来就没有，直接算成功
+
+        // 归属校验（记录带 _openid 且不匹配才拒绝）
+        if (doc && doc.data && doc.data._openid && doc.data._openid !== OPENID) {
+          return { ok: false, error: '无权限删除他人草稿' };
+        }
+
+        if (doc && doc.data && doc.data.fileID) {
+          await cloud.deleteFile({ fileList: [doc.data.fileID] }).catch(() => {});
+        }
+        await db.collection(DRAFT_COLLECTION).doc(docId).remove().catch(() => {});
         return { ok: true };
       }
 

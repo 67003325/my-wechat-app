@@ -74,6 +74,10 @@ Page({
       projectDateDisplay: formattedDate
     });
 
+    // 💡 当前编辑的草稿身份（draftId）：null = 新项目，保存时新建一条
+    //    改项目名不会换身份 → 保存时更新同一条，而不是新建
+    this._currentDraftId = null;
+
     // 4. 启动后尝试恢复上次未提交的草稿（防闪退/强退导致数据丢失）
     this.tryRecoverDraft();
 
@@ -230,6 +234,9 @@ Page({
           clearTimeout(this._saveTimer);
           this._saveTimer = null;
         }
+
+        // 断开与旧草稿的关联：下次保存会新建一条（新项目 = 新档案）
+        this._currentDraftId = null;
 
         // 重置为今天 + 空白表单
         const now = new Date();
@@ -399,7 +406,7 @@ Page({
       success: (r) => {
         if (!r.confirm) return;
         wx.showLoading({ title: '正在清空...', mask: true });
-        this.clearDraft(true).then(() => {
+        this.clearAllDrafts(true).then(() => {
           wx.hideLoading();
           wx.showToast({ title: '已清空草稿箱', icon: 'success' });
         }).catch(() => {
@@ -423,6 +430,8 @@ Page({
       wx.hideLoading();
       const result = r.result || {};
       if (!result.ok) throw new Error(result.error || '读取失败');
+      // 先用记录上的身份兜底（老记录内容里可能没有 draftId）
+      if (draftDoc.draftId) this._currentDraftId = draftDoc.draftId;
       this.applyDraftData(result.data);
       wx.showToast({ title: '草稿已恢复', icon: 'success' });
     } catch (e) {
@@ -440,6 +449,9 @@ Page({
    */
   applyDraftData: async function(draft) {
     if (!draft || !Array.isArray(draft.checkItems) || !draft.checkItems.length) return false;
+
+    // 💡 找回这份草稿的身份：之后改名再保存会更新同一条，而不是新建
+    if (draft.draftId) this._currentDraftId = draft.draftId;
 
     // 1. 收集所有 cloud:// fileID，批量换取临时显示链接
     const fileIds = [];
@@ -495,12 +507,16 @@ Page({
   },
 
   /**
-   * 手动清空草稿（用户主动放弃未提交内容）
+   * 手动清空【当前项目】草稿（用户主动放弃未提交内容）
+   * 💡 不会删草稿箱里其他项目，要删全部请用草稿箱里的"一键清空"
    */
   onClearDraft: function() {
+    const pn = this.data.projectName || '未命名项目';
     wx.showModal({
-      title: '清空草稿',
-      content: '将删除当前未提交的全部编辑内容，确定吗？',
+      title: '清空当前草稿',
+      content: `将删除项目「${pn}」的草稿。\n\n草稿箱里的其他项目不受影响。确定吗？`,
+      confirmText: '删除',
+      confirmColor: '#ff4d4f',
       success: (res) => {
         if (res.confirm) this.clearDraft(false);
       }
@@ -642,21 +658,39 @@ Page({
    * - 本地只缓存内容（万一云端没成功也有备份）
    */
   saveDraft: async function() {
-    // 0) 图片持久化（本地临时路径 → 云端 fileID）
+    // 0) 💡 关键：进入就【同步】分配草稿身份，必须在任何 await 之前
+    //    否则并发保存（自动保存 + 手动保存撞一起）会各自生成新 draftId，
+    //    一次保存变出好几条档案。这里先定死身份，并发的几次就都写同一条。
+    if (!this._currentDraftId) {
+      this._currentDraftId = `d${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    }
+    const draftId = this._currentDraftId;
+
+    // 1) 图片持久化（本地临时路径 → 云端 fileID）
     const draft = await this.prepareDraftData();
     const json = JSON.stringify(draft);
 
-    // 1) 本地双保险
+    // 2) 本地双保险
     try { wx.setStorageSync(this.DRAFT_LOCAL_KEY, json); } catch (e) { /* 配额超限忽略 */ }
 
-    // 2) 云端（云函数管理员权限写，按项目名归类）
+    // 3) 云端（云函数管理员权限写）
+    //    💡 传 draftId：有则更新同一条（改项目名也只是改名），无则新建
     try {
       const res = await wx.cloud.callFunction({
         name: 'draftManager',
-        data: { action: 'save', name: this.data.projectName || '', snapshot: false, data: draft }
+        data: {
+          action: 'save',
+          name: this.data.projectName || '',
+          snapshot: false,
+          draftId,
+          data: draft
+        }
       });
       const r = res.result || {};
       if (!r.ok) throw new Error(r.error || '云端保存失败');
+
+      // 云端若返回了身份（理论上与本地一致），以云端为准
+      if (r.draftId) this._currentDraftId = r.draftId;
 
       wx.setStorageSync(this.DRAFT_FILEID_KEY, r.fileID);
       if (!this.data.hasDraft) this.setData({ hasDraft: true });
@@ -668,13 +702,49 @@ Page({
   },
 
   /**
-   * 清空草稿（本地 + 云端所有具名草稿 + 自动保存槽位）
+   * 只清本地缓存（不动云端）
+   * 💡 用于：读取草稿失败 / 本地记录失效等情况，避免误删云端其他项目
+   */
+  clearLocalDraft: function() {
+    try { wx.removeStorageSync(this.DRAFT_FILEID_KEY); } catch (e) {}
+    try { wx.removeStorageSync(this.DRAFT_LOCAL_KEY); } catch (e) {}
+  },
+
+  /**
+   * 清空【当前项目】的草稿（本地 + 云端该项目槽位）
+   * 💡 一项目一槽位，所以只删当前项目那一条，其他项目不受影响
    * @param {boolean} silent 静默模式：成功生成后调用不弹 toast
    */
   clearDraft: async function(silent) {
     try { wx.removeStorageSync(this.DRAFT_FILEID_KEY); } catch (e) {}
     try { wx.removeStorageSync(this.DRAFT_LOCAL_KEY); } catch (e) {}
-    // 云端：走云函数一键清空（所有具名草稿 + 自动保存），失败静默
+    // 云端：按草稿身份删当前这一条（不是按项目名，改名也不会误删别人）
+    try {
+      await wx.cloud.callFunction({
+        name: 'draftManager',
+        data: {
+          action: 'deleteById',
+          draftId: this._currentDraftId || '',
+          name: this.data.projectName || ''   // 旧记录没有 draftId 时的兜底
+        }
+      });
+    } catch (e) { /* 云函数未部署或已清理，忽略 */ }
+    // 断开身份：继续编辑再保存会开一条新档案
+    this._currentDraftId = null;
+    this.setData({ hasDraft: false });
+    this.refreshDraftCount();
+    if (!silent) wx.showToast({ title: '草稿已清空', icon: 'success' });
+  },
+
+  /**
+   * 清空【全部】草稿（本地 + 云端所有项目记录）
+   * 💡 危险操作，只用于用户明确点了"一键清空"
+   * @param {boolean} silent 静默模式
+   */
+  clearAllDrafts: async function(silent) {
+    try { wx.removeStorageSync(this.DRAFT_FILEID_KEY); } catch (e) {}
+    try { wx.removeStorageSync(this.DRAFT_LOCAL_KEY); } catch (e) {}
+    // 云端：清空所有记录
     try {
       await wx.cloud.callFunction({
         name: 'draftManager',
@@ -706,8 +776,9 @@ Page({
         const list = (r.result && r.result.list) || [];
         if (!list.length) return;
 
+        let chosen = null;
         if (list.length === 1) {
-          fileID = list[0].fileID;
+          chosen = list[0];
         } else {
           // 多条：让用户选要恢复哪个项目
           const labels = list.slice(0, 6).map((d) => d.name || '未命名项目');
@@ -719,8 +790,11 @@ Page({
             });
           });
           if (pick < 0) return;
-          fileID = list[pick].fileID;
+          chosen = list[pick];
         }
+        fileID = chosen.fileID;
+        // 记住选中这份的身份（老记录内容里没 draftId 时靠它兜底）
+        if (chosen.draftId) this._currentDraftId = chosen.draftId;
       } catch (e) { /* 云函数未部署或网络问题，忽略 */ }
     }
     if (!fileID) return;
@@ -742,20 +816,20 @@ Page({
       });
       draft = typeof content === 'string' ? JSON.parse(content) : content;
     } catch (e) {
-      // 草稿已失效，清掉本地记录
+      // 草稿已失效 —— 只清本地缓存，绝不动云端其他项目
       console.warn('草稿读取失败', e);
-      this.clearDraft(true);
+      this.clearLocalDraft();
       return;
     }
 
     if (!draft || !Array.isArray(draft.checkItems) || !draft.checkItems.length) {
-      this.clearDraft(true);
+      this.clearLocalDraft();
       return;
     }
 
     // 超过 30 天不弹
     if (Date.now() - (draft.savedAt || 0) > 30 * 24 * 60 * 60 * 1000) {
-      this.clearDraft(true);
+      this.clearLocalDraft();
       return;
     }
 
@@ -880,8 +954,9 @@ Page({
       wx.showLoading({ title: '正在下载并打开...', mask: true });
       await this.downloadAndPreviewFile(cloudRes.result.fileID, 'docx', projectName);
 
-      // 5. 成功生成后静默清掉草稿（任务已完成）
-      this.clearDraft(true);
+      // 5. 💡 不再清空草稿：报告生成后草稿保留，方便回头修改再生成一版
+      //    （要删请手动用「🗑 清空草稿」或草稿箱里的删除）
+      wx.hideLoading();
 
     } catch (error) {
       wx.hideLoading();
@@ -926,8 +1001,9 @@ Page({
       wx.showLoading({ title: '正在下载并打开...', mask: true });
       await this.downloadAndPreviewFile(cloudRes.result.fileID, 'pdf', projectName);
 
-      // 5. 成功生成后静默清掉草稿（任务已完成）
-      this.clearDraft(true);
+      // 5. 💡 不再清空草稿：报告生成后草稿保留，方便回头修改再生成一版
+      //    （要删请手动用「🗑 清空草稿」或草稿箱里的删除）
+      wx.hideLoading();
 
     } catch (error) {
       wx.hideLoading();
