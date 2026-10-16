@@ -1,0 +1,388 @@
+/* ================= 全局与容器样式 ================= */
+page {
+  background-color: #ffffff;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.page-scroll-view {
+  height: 100%;
+  width: 100%;
+  padding: 30rpx;
+  box-sizing: border-box;
+}
+
+/* ================= 封面页样式 ================= */
+.cover-page {
+  position: relative;
+  height: 1000rpx;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+  margin-bottom: 50rpx;
+  border-bottom: 2rpx dashed #ccc;
+}
+
+.cover-logo {
+  position: absolute;
+  top: 20rpx;
+  left: 0;
+  width: 150rpx;
+  height: 100rpx;
+}
+
+.cover-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.cover-title {
+  top: 200rpx;
+}
+
+.cover-subtitle {
+  top: 320rpx;
+  font-size: 42rpx;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.cover-company {
+  bottom: 120rpx;
+  font-size: 32rpx;
+  line-height: 1;
+}
+
+.cover-date {
+  bottom: 50rpx;
+  display: flex;            /* 💡 修复点：添加 flex 弹性盒布局 */
+  justify-content: center;  /* 💡 修复点：让日期选择器在正中间对齐 */
+}
+
+/* ================= 封面可编辑输入框与选择器 ================= */
+.edit-input {
+  width: 80%;
+  text-align: center;
+  border-bottom: none; /* 💡 修复点：去掉项目名称下方的横线 */
+  padding: 10rpx 0;
+}
+
+.edit-input:focus {
+  border-bottom: none; /* 💡 修复点：聚焦时也不显示横线 */
+}
+
+.title-input {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #000000; /* 输入的实际内容为黑色 */
+  /* 💡 修复点：显式设置高度与行高，防止 48rpx 大字号被 input 默认高度裁掉一半 */
+  height: 100rpx;
+  min-height: 100rpx;
+  line-height: 100rpx;
+  padding: 0;
+}
+
+/* 💡 占位符样式：默认未填写时显示灰色 */
+.title-placeholder {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #bfbfbf;
+}
+
+/* 日期选择器触发块样式 */
+.date-picker-trigger {
+  display: block;                /* 💡 修复点：改为块级元素，配合外层彻底拉正居中 */
+  min-width: 320rpx;
+  padding: 12rpx 30rpx;
+  background-color: transparent; /* 💡 修复点：去掉灰色背景，改为纯透明 */
+  border-radius: 0;               /* 💡 修复点：去掉圆角 */
+  font-size: 32rpx;
+  color: #333333;
+  border: none;                  /* 💡 修复点：去掉外框线 */
+  text-align: center;            /* 💡 修复点：确保内部文本水平居中 */
+  box-shadow: none;              /* 💡 修复点：去掉阴影 */
+}
+
+/* ================= 完美的自适应表格系统 ================= */
+.table-container {
+  position: relative; /* 容纳右上角绝对定位的删除按钮 */
+  width: 100%;
+  border-top: 2rpx solid #000000;
+  border-left: 2rpx solid #000000;
+  margin-bottom: 40rpx;
+  box-sizing: border-box;
+}
+
+.tr {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.td {
+  border-right: 2rpx solid #000000;
+  border-bottom: 2rpx solid #000000;
+  height: 84rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  box-sizing: border-box;
+  padding: 10rpx;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* 比例分栏控制 */
+.flex-3 { flex: 3; }
+.flex-5 { flex: 5; }
+.flex-7 { flex: 7; }
+
+.td-bold {
+  font-weight: bold;
+}
+.td-label {
+  font-weight: bold;
+}
+.bg-gray {
+  background-color: #f2f2f2;
+}
+
+/* 表格内部的文本输入框 */
+.table-input {
+  width: 100%;
+  height: 100%;
+  text-align: left;   /* 💡 修改点：查验子项/拍摄位置/拍摄说明 输入文字居左 */
+  padding-left: 16rpx; /* 左侧留一点呼吸间距，避免贴边 */
+  font-size: 28rpx;
+}
+
+/* 查验子项选择器单元格（外观与输入框一致） */
+.picker-cell {
+  width: 100%;
+  font-size: 28rpx;
+  color: #333333;
+  text-align: left;
+  padding-left: 16rpx;
+}
+
+.picker-placeholder {
+  color: #bfbfbf; /* 未选择时的灰色占位提示 */
+}
+
+/* ================= 大图上传区域样式 ================= */
+.photo-row .td {
+  height: 450rpx;
+  padding: 0;
+  background-color: #fafafa;
+}
+
+.photo-cell image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 未上传图片时的虚线占位框 */
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  height: 90%;
+  border: 2rpx dashed #bfbfbf;
+  border-radius: 8rpx;
+  color: #8c8c8c;
+  font-size: 26rpx;
+}
+
+.upload-icon {
+  font-size: 52rpx;
+  color: #bfbfbf;
+  margin-bottom: 10rpx;
+  line-height: 1;
+}
+
+/* ================= 底部功能按钮（黑体加粗） ================= */
+.bottom-space {
+  height: 240rpx;
+  width: 100%;
+}
+
+.bottom-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.08);
+  padding: 20rpx 30rpx 40rpx 30rpx;
+  box-sizing: border-box;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.btn-row {
+  display: flex;
+  width: 100%;
+  gap: 20rpx;
+}
+
+/* 通用按钮基础（核心黑体加粗） */
+.action-btn {
+  flex: 1;
+  height: 84rpx;
+  line-height: 84rpx;
+  
+  /* 黑体加粗关键样式定义 */
+  font-family: "SimHei", "黑体", system-ui, -apple-system, sans-serif;
+  font-size: 30rpx;
+  font-weight: calc(700);
+  
+  border-radius: 12rpx; /* 💡 小圆角，参照图片样式 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0 !important;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.action-btn:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+.btn-icon {
+  font-family: "SimHei", "黑体", system-ui, -apple-system, sans-serif;
+  font-size: 38rpx;
+  font-weight: 900;
+  margin-right: 8rpx;
+  margin-top: -4rpx;
+}
+
+/* 按钮文字前的小 emoji 图标 */
+.emoji-icon {
+  font-size: 30rpx;
+  margin-right: 8rpx;
+  line-height: 1;
+}
+
+/* 草稿操作链接行 */
+.draft-row {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  margin-top: 4rpx;
+}
+
+.draft-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 22rpx;
+  color: #999999;
+  text-decoration: underline;
+  padding: 6rpx 16rpx;
+}
+
+.draft-link-text {
+  line-height: 1;
+}
+
+.draft-link-danger {
+  color: #ff4d4f;
+}
+
+/* 草稿箱数量徽章（红色小圆点） */
+.draft-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28rpx;
+  height: 28rpx;
+  padding: 0 8rpx;
+  margin-left: 6rpx;
+  font-size: 20rpx;
+  color: #ffffff;
+  background-color: #ff4d4f;
+  border-radius: 14rpx;
+  text-decoration: none;
+  line-height: 1;
+}
+
+
+/* 每张查验表的右上角删除按钮 */
+.table-delete-btn {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 40rpx;
+  text-align: center;
+  background-color: #ff4d4f;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 32rpx;
+  font-weight: 700;
+  z-index: 10;
+  border: 2rpx solid #ffffff;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15);
+}
+
+.table-delete-btn:active {
+  transform: scale(0.92);
+  opacity: 0.85;
+}
+
+/* "查验子项"标签格：作为删除入口，加红色文字 + 可点击反馈 */
+.td-label-clickable {
+  color: #ff4d4f;
+  font-weight: 700;
+  position: relative;
+  cursor: pointer;
+}
+
+.td-label-clickable::after {
+  content: '🗑';
+  font-size: 22rpx;
+  margin-left: 6rpx;
+  opacity: 0.6;
+}
+
+.td-label-clickable:active {
+  background-color: #ffe7e7 !important;
+}
+
+/* 1. 第一行按钮，严格参照图片样式：
+   新增查验子项 → 浅蓝白底 + 蓝色常规字重文字；保存资料 → 亮绿色实底 + 白色加粗文字 */
+.btn-add {
+  background-color: #eaf3fd;   /* 图片左侧：浅蓝背景（同款饱和度/亮度） */
+  color: #2478f2;              /* 图片左侧：蓝色字体（同款饱和度/亮度） */
+  font-weight: 700;            /* 字体加粗 */
+  border: none;
+  box-shadow: none;
+}
+
+.btn-save {
+  background-color: #33ad33;   /* 绿色实底，再压暗一档 */
+  color: #ffffff;              /* 图片右侧：白色字体 */
+  font-weight: 700;            /* 图片右侧：加粗 */
+  border: none;
+}
+
+/* 2. 第二行按钮（生成 Word / 生成 PDF）：蓝色实底 + 白字（饱和度/亮度与图片一致） */
+.btn-word,
+.btn-pdf {
+  background-color: #2478f2;
+  color: #ffffff;
+  font-weight: 700;
+  border: none;
+}

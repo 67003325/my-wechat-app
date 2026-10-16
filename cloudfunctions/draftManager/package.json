@@ -1,0 +1,9 @@
+{
+  "name": "draftManager",
+  "version": "1.0.0",
+  "description": "草稿箱：本地缓存+线上备份，支持保存/列表/读取/删除（管理员权限，绕开云存储 ACL）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

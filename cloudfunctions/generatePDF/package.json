@@ -1,0 +1,10 @@
+{
+  "name": "generatePDF",
+  "version": "1.0.0",
+  "description": "消防查验生成PDF云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "pdfkit": "^0.15.0"
+  }
+}

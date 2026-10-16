@@ -1,0 +1,132 @@
+<!-- 使用 scroll-view 允许页面上下滚动 -->
+<scroll-view class="page-scroll-view" scroll-y="true">
+
+  <!-- WXS：把 0-based 索引补零成 3 位序号（001, 002, ..., 999） -->
+  <wxs module="fmt">
+  var pad3 = function (n) {
+    var s = '' + n;
+    while (s.length < 3) s = '0' + s;
+    return s;
+  };
+  module.exports = {
+    itemNo: function (index) { return pad3(index + 1); }
+  };
+  </wxs>
+
+  <!-- ================= 封面页 ================= -->
+  <view class="cover-page">
+    <image class="cover-logo" src="/images/asd-logo.png" mode="aspectFit"></image>
+    
+    <!-- 可编辑的项目名称 -->
+    <view class="cover-line cover-title">
+      <input class="edit-input title-input" value="{{projectName}}" bindinput="onProjectNameInput" placeholder="xxx项目" placeholder-class="title-placeholder" />
+    </view>
+
+
+    
+    <view class="cover-line cover-subtitle">消防查验阶段图片资料</view>
+    <view class="cover-line cover-company">江苏安仕达消防技术有限公司</view>
+    
+    <!-- 可编辑的日期（由 input 升级为 picker 日期选择器） -->
+    <view class="cover-line cover-date">
+      <picker mode="date" value="{{projectDateValue}}" fields="day" bindchange="onDateChange">
+        <view class="date-picker-trigger">
+          {{projectDateDisplay}}
+        </view>
+      </picker>
+    </view>
+  </view> <!-- 💡 修复点：原代码在这里漏掉了闭合封面页的 view 标签 -->
+
+  <!-- ================= 动态表格列表 ================= -->
+  <!-- 使用 wx:for 循环渲染 checkItems 数组，index 为当前表格索引 -->
+  <block wx:for="{{checkItems}}" wx:key="index">
+    <view class="table-container">
+      <!-- 第一行：查验子项名称（点击弹出预设列表选择） -->
+      <view class="tr">
+        <view class="td td-label td-label-clickable bg-gray flex-3" data-index="{{index}}" bindtap="onDeleteItem">查验子项{{fmt.itemNo(index)}}</view>
+        <view class="td flex-7">
+          <picker mode="selector" range="{{subItemOptions}}" data-index="{{index}}" bindchange="onSubItemPick">
+            <view class="picker-cell {{item.subItemName ? '' : 'picker-placeholder'}}">{{item.subItemName || '请选择查验子项'}}</view>
+          </picker>
+        </view>
+      </view>
+      
+      <!-- 第二行：表头 -->
+      <view class="tr">
+        <view class="td td-bold flex-5">现场拍摄影像</view>
+        <view class="td td-bold flex-5">现场拍摄数据</view>
+      </view>
+      
+      <!-- 第三行：大图展示区域 -->
+      <view class="tr photo-row">
+        <view class="td photo-cell flex-5" data-index="{{index}}" data-type="photoImage" bindtap="onChooseImage">
+          <image wx:if="{{item.photoImage && !item.photoImageExpired}}" src="{{item.photoImage}}" mode="aspectFit"></image>
+          <view wx:else class="upload-placeholder">
+            <text class="upload-icon">{{item.photoImageExpired ? '⚠' : '+'}}</text>
+            <text>{{item.photoImageExpired ? '上次图片已失效，点击重新上传' : '点击上传影像'}}</text>
+          </view>
+        </view>
+        <view class="td photo-cell flex-5" data-index="{{index}}" data-type="photoData" bindtap="onChooseImage">
+          <image wx:if="{{item.photoData && !item.photoDataExpired}}" src="{{item.photoData}}" mode="aspectFit"></image>
+          <view wx:else class="upload-placeholder">
+            <text class="upload-icon">{{item.photoDataExpired ? '⚠' : '+'}}</text>
+            <text>{{item.photoDataExpired ? '上次图片已失效，点击重新上传' : '点击上传数据'}}</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 第四行：拍摄位置输入 -->
+      <view class="tr">
+        <view class="td td-bold flex-3">拍摄位置</view>
+        <view class="td flex-7">
+          <input class="table-input" value="{{item.location}}" data-index="{{index}}" data-field="location" bindinput="onTableInput" placeholder="请输入拍摄位置" />
+        </view>
+      </view>
+      
+      <!-- 第五行：拍摄说明输入 -->
+      <view class="tr">
+        <view class="td td-bold flex-3">拍摄说明</view>
+        <view class="td flex-7">
+          <input class="table-input" value="{{item.description}}" data-index="{{index}}" data-field="description" bindinput="onTableInput" placeholder="请输入拍摄说明" />
+        </view>
+      </view>
+      
+    </view>
+  </block>
+
+  <!-- 底部垫高占位，防止内容被悬浮按钮挡住 -->
+  <view class="bottom-space"></view>
+</scroll-view>
+
+<!-- ================= 底部固定悬浮按钮（黑体加粗） ================= -->
+<view class="bottom-action-bar">
+  <view class="btn-row">
+    <button class="action-btn btn-add" bindtap="onAddSubItem">
+      <text class="btn-icon">+</text>新增查验子项
+    </button>
+    <button class="action-btn btn-save" bindtap="onSaveData">
+      <text class="emoji-icon">💾</text>保存文件
+    </button>
+  </view>
+  <view class="btn-row">
+    <button class="action-btn btn-word" bindtap="onExportWord">
+      <text class="emoji-icon">📘</text>生成 Word
+    </button>
+    <button class="action-btn btn-pdf" bindtap="onExportPDF">
+      <text class="emoji-icon">📕</text>生成 PDF
+    </button>
+  </view>
+  <!-- 草稿入口：新建项目（最左） + 草稿箱 + 清空草稿 -->
+  <view class="draft-row">
+    <view class="draft-link" bindtap="onNewProject">
+      <text class="draft-link-text">➕ 新建项目</text>
+    </view>
+    <view class="draft-link" bindtap="onOpenDraftBox">
+      <text class="draft-link-text">📂 草稿箱</text>
+      <text wx:if="{{draftCount > 0}}" class="draft-badge">{{draftCount}}</text>
+    </view>
+    <view wx:if="{{hasDraft}}" class="draft-link draft-link-danger" bindtap="onClearDraft">
+      <text class="draft-link-text">🗑 清空草稿</text>
+    </view>
+  </view>
+</view>
