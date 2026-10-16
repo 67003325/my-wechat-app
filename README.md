@@ -3,9 +3,10 @@
 * 修改草稿箱自动生成多个文件的问题
 --- 
 
-🛠️ 日常更新与推送三步法
+# 🛠️ 日常更新与推送三步法
 
 打开本地项目文件夹的终端（Git Bash 或 CMD），依次输入以下命令：
+
 1. 暂存修改（把新文件或修改过的文件添加到暂存区）
 
 ```bash
@@ -25,23 +26,8 @@ git push
  ```
 > 请谨慎使用此类代码。
 
-第8步：以后每天怎么用
+# 换电脑怎么操作
 
-每次写完代码，三步走：
-
-bash ā
-
-#1. 然存所有改动
-git add.
-
-#2. 提交（引号里写这次改了什么）
-gitcommit-m"修复了首页样式”
-
-#3. 摊送到GitHub
-git push
-
-第6步用了-u设置了上游跟踪，所以以后直接git push 就行，不用再写origin
-master。
 
 <img width="657" height="408" alt="image" src="https://github.com/user-attachments/assets/e176cb9a-966c-4a62-aab1-1f1a43d91742" />
 
