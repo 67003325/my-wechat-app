@@ -32,7 +32,7 @@ git push
 ## # 换电脑怎么操作
   ### 新电脑上：
    #### # 1. 克隆项目
-    ` git clone https://github.com `
+    ` git clone [https://github.com](https://github.com/你的账号地址.git) `
 
    #### # 2. 配置环境
     * 用微信开发者工具导入这个目录，填上你的 AppID
