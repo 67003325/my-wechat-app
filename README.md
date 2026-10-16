@@ -29,18 +29,20 @@ git push
 ## # 换电脑怎么操作
   ### 新电脑上：
 ```bash
-# 1. 克隆项目
-git clone https://github.com
+ # 1. 克隆项目 
+  git clone https://github.com  
 
-# 2. 用微信开发者工具导入这个目录，填上你的 AppID
-# 3. 菜单 -> 工具 -> 构建 npm (如果有用到 npm 包的话)
+ # 2. 用微信开发者工具导入这个目录，填上你的  AppID 
 
-# 开始写代码
-git pull              # 每次开始前先拉
-# ...写代码...
-git add .
-git commit -m "在新电脑上的改动"
-git push              # 推回去
+ # 3. 菜单 -> 工具 -> 构建 npm (如果有用到 npm 包的话)
+
+ # 开始写代码
+  git pull     # 每次开始前先拉
+
+ # ...写代码...
+  git add .  
+  git commit -m "在新电脑上的改动"  
+  git push     # 推回去
 ```
 
 ## # 一张速查表
